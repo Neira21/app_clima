@@ -1,62 +1,49 @@
 import { useState, useEffect } from 'react'
 
+import WeatherForm from './WeatherForm'
+import WeatherMainInfo from './WeatherMainInfo'
+import Loading from './Loading'
 
 const BuscadorClima = () => {
 
-  const [ciudad, setCiudad] = useState('')
-  const [clima, setClima] = useState(null)
+  const APP_URL='https://api.openweathermap.org/data/2.5/weather'
+
+  const [weather, setWeather] = useState(null)
   const [error, setError] = useState(null)
   
-  const fetchClima = async () => {
+  const fetchClima = async (city = 'lima') => {
     try{
-      const respone = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${ciudad}&appid=${import.meta.env.VITE_API_KEY}`)
+      const respone = await fetch(`${APP_URL}?q=${city}&appid=${import.meta.env.VITE_API_KEY}`)
       const data = await respone.json()
       if (data.cod && data.cod !== 200) {
-        setError(`No se encontró la ciudad: ${ciudad}`);
-        setClima(null);
+        setError(`No se encontró la ciudad: ${city}`);
+        setWeather(null);
       } else {
-        setClima(data);
+        setWeather(data);
         setError(null);
       }
     } catch (error) {
       setError(error.message);
     }
   }
-  
-  const onSubmit = e => {
-    e.preventDefault()
-    if(!ciudad) return alert('Escribe una ciudad')
-    console.log(ciudad)
-    fetchClima()
+
+  const handleChangeCity = (city) =>{
+    setWeather(null)
+    fetchClima(city)
   }
 
+  useEffect(()=> {
+    console.log('iniciando aplicación de clima')
+    fetchClima()
+  },[])
+
   return (
-    <div className='principal-contenedor'>
-      <form className='formulario' onSubmit={onSubmit}>
-        <input 
-          className='input'
-          type="text"
-          value={ciudad}
-          onChange={e => setCiudad(e.target.value)}
-        />
-        <button>Buscar</button>
-      </form>
+    <div className='weatherContainer'>
+      <WeatherForm onChangeCity={handleChangeCity} />
+      {error ? <div>{error}</div> :
+        weather ? <WeatherMainInfo weather={weather} /> : <Loading />
+      }
       
-      {error && <div>{error}</div>}
-      <div className='clima-contenedor'>
-        {clima && 
-          <>
-            <div className='clima-datos' >
-                <h2>Ciudad: {clima?.name}</h2>
-                <p> <b>Condición meteorológica: </b>   {clima?.weather[0].description}</p>
-                <p> <b>Temperatura: </b>  {parseInt(clima?.main.temp - 273)}°C</p>
-            </div>
-            <div>
-              <img src={`https://openweathermap.org/img/wn/${clima.weather[0].icon}.png`} alt="" />
-            </div>
-          </>
-        }
-      </div>
     </div>
   )
 }
